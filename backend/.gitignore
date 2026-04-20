@@ -1,1 +1,13 @@
 .env
+fashionenv/
+.vscode/
+.idea/
+*.swp
+*.swo
+!*/migrations/init.py
+media/
+staticfiles/
+
+pycache/
+*.py[cod]
+*$py.class
