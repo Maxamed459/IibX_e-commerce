@@ -103,7 +103,7 @@ class Profile(models.Model):
     weight_kg = models.DecimalField(
         max_digits=5, decimal_places=2, null=True, blank=True
     )
-    craeted_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -133,7 +133,7 @@ class Address(models.Model):
     postal_code = models.CharField(max_length=100, blank=True)
     country = models.CharField(max_length=100, default="Somalia")
     is_default = models.BooleanField(default=False)
-    craeted_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
