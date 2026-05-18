@@ -13,6 +13,7 @@ from .serializers import (
     AddressSerializer,
 )
 from .services import AccountService
+from django.conf import settings
 
 
 @api_view(["POST"])
@@ -26,18 +27,25 @@ def register(request):
             phone=serializer.validated_data["phone"],
         )
 
-        refresh = RefreshToken.for_user(user)
-
-        return Response(
+        refresh_token = RefreshToken.for_user(user)
+        response = Response(
             {
                 "user": UserSerializer(user).data,
-                "tokens": {
-                    "refresh": str(refresh),
-                    "access": str(refresh.access_token),
-                },
+                "access_token": str(refresh_token.access_token),
             },
             status=status.HTTP_201_CREATED,
         )
+
+        response.set_cookie(
+            key="refresh_token",
+            value=str(refresh_token),
+            httponly=True,
+            secure=not settings.DEBUG,
+            samesite="None",
+            max_age=7 * 24 * 60 * 60,
+        )
+
+        return response
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -52,18 +60,23 @@ def login(request):
         )
 
         if user:
-            refresh = RefreshToken.for_user(user)
-
-            return Response(
+            refresh_token = RefreshToken.for_user(user)
+            response = Response(
                 {
                     "user": UserSerializer(user).data,
-                    "tokens": {
-                        "refresh": str(refresh),
-                        "access": str(refresh.access_token),
-                    },
+                    "access": str(refresh_token.access_token),
                 },
                 status=status.HTTP_200_OK,
             )
+            response.set_cookie(
+                key="refresh_token",
+                value=str(refresh_token),
+                httponly=True,
+                secure=not settings.DEBUG,
+                samesite="None",
+            )
+
+            return response
         return Response(
             {"error": "Invalid credentials"}, status=status.HTTP_401_BAD_REQUEST
         )
