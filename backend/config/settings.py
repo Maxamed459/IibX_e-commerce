@@ -3,7 +3,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
 
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -137,7 +136,7 @@ REST_FRAMEWORK = {
         "rest framework.filters.SearchFilter",
         "rest_framework.filters.Ordering Filter",
     ],
-    "DEFAULT SCHEMA CLASS": "drf spectacular.openapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT THROTTLE CLASSES": [
         "rest_framework.throttling.AnonRateThrottle"
         "rest_framework.throttling.UserRateThrottle",
@@ -177,7 +176,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 # API DECOMENTATION
 SPECTACULAR_SETTINGS = {
     "TITLE": "Fashion E-Commerce API",
-    "DESCRIPTION": "Agentic fashion E-Commerce Platform with Ml-powered recomendation",
+    "DESCRIPTION": "fashion E-Commerce Platform with production ready ",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
