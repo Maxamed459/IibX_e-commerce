@@ -4,3 +4,6 @@ djangorestframework-simplejwt
 dotenv
 django-cors-headers
 drf-spectacular
+psycopg2
+psycopg
+Pillow

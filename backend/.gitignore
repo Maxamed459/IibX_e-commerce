@@ -11,3 +11,5 @@ staticfiles/
 pycache/
 *.py[cod]
 *$py.class
+
+development_pipeline.md
