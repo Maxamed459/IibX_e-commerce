@@ -1,9 +1,9 @@
 django
 djangorestframework
 djangorestframework-simplejwt
-dotenv
+python-dotenv
 django-cors-headers
 drf-spectacular
-psycopg2
+psycopg2-binary
 psycopg
 Pillow
