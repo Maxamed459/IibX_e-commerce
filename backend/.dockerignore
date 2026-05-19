@@ -1,0 +1,50 @@
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment
+venv/
+env/
+.env/
+.env.prod/
+.venv/
+
+# Environment variables (sensitive!)
+.env
+*.env
+
+# Django specific
+*.log
+db.sqlite3
+
+# Docker files (no need to copy into image)
+Dockerfile
+docker-compose.yml
+compose.yaml
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Static & Media (usually served separately)
+staticfiles/
+media/
