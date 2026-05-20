@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     # Local apps
     "accounts.apps.AccountsConfig",
+    "products.apps.ProductsConfig"
 ]
 
 MIDDLEWARE = [
