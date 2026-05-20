@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
@@ -34,6 +34,39 @@ def register(request):
                 "access_token": str(refresh_token.access_token),
             },
             status=status.HTTP_201_CREATED,
+        )
+
+        response.set_cookie(
+            key="refresh_token",
+            value=str(refresh_token),
+            httponly=True,
+            secure=not settings.DEBUG,
+            samesite="None",
+            max_age=7 * 24 * 60 * 60,
+        )
+
+        return response
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def register_superuser(request):
+    serializer = UserRegistrationSerializer(data=request.data)
+    if serializer.is_valid():
+        user = AccountService.create_superuser(
+            email=serializer.validated_data["email"],
+            password=serializer.validated_data["password"],
+            phone=serializer.validated_data["phone"]
+        )
+
+        refresh_token = RefreshToken.for_user(user)
+
+        response = Response(
+            {
+                "user": UserSerializer(user).data,
+                "access_token": str(refresh_token.access_token)
+            },
+            status=status.HTTP_201_CREATED
         )
 
         response.set_cookie(
