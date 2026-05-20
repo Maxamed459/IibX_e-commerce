@@ -15,6 +15,18 @@ class AccountService:
         Profile.objects.get_or_create(user=user)
 
         return user
+    
+    @staticmethod
+    @transaction.atomic
+    def create_superuser(email, password, phone=None):
+        if User.objects.filter(email=email).exists():
+            raise ValidationError("User with this email already exists")
+        
+        superuser = User.objects.create_superuser(email=email, password=password, phone=phone)
+
+        Profile.objects.get_or_create(user=superuser)
+
+        return superuser
 
     @staticmethod
     def update_fcm_token(user, fcm_token):
