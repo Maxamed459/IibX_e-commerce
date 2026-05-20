@@ -1,6 +1,6 @@
 services:
   postgresDB:
-    image: postgres:15
+    image: postgres:15 # you can update it to the latest this is the version i have so i want to re-use it.
     container_name: postgresql
     ports:
       - "5432:5432"
