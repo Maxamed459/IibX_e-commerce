@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Categories, Products
+from django.utils.text import slugify
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -12,7 +13,9 @@ class CategorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Category name must be at least 2 characters long.")
         return value
 
-class ProductSerializer(serializers.ModelField):
+class ProductSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+
     class Meta:
         model = Products
         fields = [
@@ -28,6 +31,9 @@ class ProductSerializer(serializers.ModelField):
         ]
 
 class CreateProductSerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(
+        queryset = Categories.objects.all()
+    )
     class Meta:
         model = Products
         fields = [
@@ -50,3 +56,9 @@ class CreateProductSerializer(serializers.ModelSerializer):
         if value < 0:
             raise serializers.ValidationError("Stock must be positive number or Zero.")
         return value
+    
+    def create(self, validated_data):
+        if not validated_data.get("slug"):
+            validated_data["slug"] = slugify(validated_data["name"])
+
+        return super().create(validated_data)
