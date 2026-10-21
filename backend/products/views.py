@@ -36,3 +36,13 @@ def create_product(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+@api_view(["GET", "DELETE"])
+@permission_classes([IsAuthenticatedOrReadOnly])
+def get_or_delete_product(request, pk):
+    if request.method == 'DELETE':
+        product = Products.objects.delete(pk=pk)
+    product = Products.objects.get(pk=pk)
+    serializer = ProductSerializer(product)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+    
