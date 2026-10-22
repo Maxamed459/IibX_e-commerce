@@ -7,12 +7,20 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
     SpectacularRedocView,
 )
+from rest_framework.routers import DefaultRouter
+from products.views import CategoryViewSet
+
+router = DefaultRouter()
+
+router.register(r'categories', CategoryViewSet, basename="category")
 
 # API V1 URL PATTERS
 api_v1_patterns = [
     # Authentication
     path("auth/", include("accounts.urls")),
-    path("products/", include("products.urls"))
+    path("products/", include("products.urls")),
+    path("orders/", include("orders.urls")),
+    path("", include(router.urls))
 ]
 urlpatterns = [
     path("admin/", admin.site.urls),
