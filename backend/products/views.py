@@ -1,8 +1,8 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser, DjangoModelPermissionsOrAnonReadOnly
 from .models import Categories, Products
@@ -22,27 +22,37 @@ class CategoryViewSet(ModelViewSet):
         slug = serializer.validated_data.get('slug') or slugify(name)
         serializer.save(slug=slug)
 
-@api_view(["GET", "POST"])
-@permission_classes([IsAuthenticatedOrReadOnly])
-def create_product(request):
-    products = Products.objects.all()
-    if request.method == "GET":
-        serializer = ProductSerializer(products, many=True,context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    elif request.method == "POST":
+
+class CreateProduct(APIView):
+    permission_classes= [IsAuthenticated]
+    def post(self, request):
         serializer = CreateProductSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-@api_view(["GET", "DELETE"])
-@permission_classes([IsAuthenticatedOrReadOnly])
-def get_or_delete_product(request, pk):
-    if request.method == 'DELETE':
-        product = Products.objects.delete(pk=pk)
-    product = Products.objects.get(pk=pk)
-    serializer = ProductSerializer(product)
-    return Response(serializer.data, status=status.HTTP_200_OK)
+
+class ProductDetail(APIView):
+    def get(self, request, id):
+        product = get_object_or_404(Products, pk=id)
+        serializer = ProductSerializer(product)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, id):
+        product = get_object_or_404(Products, pk=id)
+        print(f"This is the product {product}")
+        serializor = ProductSerializer(product, data=request.data, partial=True)
+        serializor.is_valid(raise_exception=True)
+        serializor.save()
+        print(f"Price {product.price}")
+        return Response(serializor.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, id):
+        product = get_object_or_404(Products, pk=id)
+        # print(f"This is the product want to delete {product}")
+        # if product.orderitems.count() > 0:
+        #     return Response({'error': 'Product can`t be deleted it has an order'}, status=status.HTTP_400_BAD_REQUEST)
+        product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     
