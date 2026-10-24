@@ -1,201 +1,235 @@
-from rest_framework import status
+from django.contrib.auth import authenticate
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.shortcuts import get_object_or_404
+
+from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate
-from .models import Profile
+
+from .models import Address, Profile
 from .serializers import (
-    UserSerializer,
-    UserRegistrationSerializer,
-    UserLoginSerializer,
-    ProfileSerializer,
     AddressSerializer,
+    ProfileSerializer,
+    UserLoginSerializer,
+    UserRegistrationSerializer,
+    UserSerializer,
 )
 from .services import AccountService
-from django.conf import settings
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def register(request):
     serializer = UserRegistrationSerializer(data=request.data)
-    if serializer.is_valid():
-        user = AccountService.craete_user(
-            email=serializer.validated_data["email"],
-            password=serializer.validated_data["password"],
-            phone=serializer.validated_data["phone"],
+    serializer.is_valid(raise_exception=True)
+
+    data = serializer.validated_data
+
+    try:
+        user = AccountService.create_user(
+            email=data["email"],
+            password=data["password"],
+            phone=data.get("phone"),
+        )
+    except DjangoValidationError as exc:
+        return Response(
+            {"detail": exc.messages},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
-        refresh_token = RefreshToken.for_user(user)
-        response = Response(
-            {
-                "user": UserSerializer(user).data,
-                "access_token": str(refresh_token.access_token),
-            },
-            status=status.HTTP_201_CREATED,
-        )
+    refresh = RefreshToken.for_user(user)
 
-        response.set_cookie(
-            key="refresh_token",
-            value=str(refresh_token),
-            httponly=True,
-            secure=not settings.DEBUG,
-            samesite="None",
-            max_age=7 * 24 * 60 * 60,
-        )
+    return Response(
+        {
+            "user": UserSerializer(user).data,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
-        return response
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
 def register_superuser(request):
     serializer = UserRegistrationSerializer(data=request.data)
-    if serializer.is_valid():
+    serializer.is_valid(raise_exception=True)
+
+    data = serializer.validated_data
+
+    try:
         user = AccountService.create_superuser(
-            email=serializer.validated_data["email"],
-            password=serializer.validated_data["password"],
-            phone=serializer.validated_data["phone"]
+            email=data["email"],
+            password=data["password"],
+            phone=data.get("phone"),
+        )
+    except DjangoValidationError as exc:
+        return Response(
+            {"detail": exc.messages},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
-        refresh_token = RefreshToken.for_user(user)
+    refresh = RefreshToken.for_user(user)
 
-        response = Response(
-            {
-                "user": UserSerializer(user).data,
-                "access_token": str(refresh_token.access_token)
-            },
-            status=status.HTTP_201_CREATED
-        )
-
-        response.set_cookie(
-            key="refresh_token",
-            value=str(refresh_token),
-            httponly=True,
-            secure=not settings.DEBUG,
-            samesite="None",
-            max_age=7 * 24 * 60 * 60,
-        )
-
-        return response
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    return Response(
+        {
+            "user": UserSerializer(user).data,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def login(request):
     serializer = UserLoginSerializer(data=request.data)
-    if serializer.is_valid():
-        user = authenticate(
-            email=serializer.validated_data["email"],
-            password=serializer.validated_data["password"],
-        )
+    serializer.is_valid(raise_exception=True)
 
-        if user:
-            refresh_token = RefreshToken.for_user(user)
-            response = Response(
-                {
-                    "user": UserSerializer(user).data,
-                    "access": str(refresh_token.access_token),
-                },
-                status=status.HTTP_200_OK,
-            )
-            response.set_cookie(
-                key="refresh_token",
-                value=str(refresh_token),
-                httponly=True,
-                secure=not settings.DEBUG,
-                samesite="None",
-            )
+    email = serializer.validated_data["email"].strip().lower()
+    password = serializer.validated_data["password"]
 
-            return response
+    user = authenticate(
+        request=request,
+        email=email,
+        password=password,
+    )
+
+    if user is None:
         return Response(
-            {"error": "Invalid credentials"}, status=status.HTTP_401_BAD_REQUEST
+            {"detail": "Invalid email or password."},
+            status=status.HTTP_401_UNAUTHORIZED,
         )
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    refresh = RefreshToken.for_user(user)
+
+    return Response({
+        "user": UserSerializer(user).data,
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+    })
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout(request):
+    refresh_token = request.data.get("refresh")
+
+    if not refresh_token:
+        return Response(
+            {"detail": "Refresh token is required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        token = RefreshToken(refresh_token)
+
+        # Do not allow one user to blacklist another user's token.
+        if str(token["user_id"]) != str(request.user.pk):
+            return Response(
+                {"detail": "Invalid refresh token."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        token.blacklist()
+
+    except Exception:
+        return Response(
+            {"detail": "Invalid or expired refresh token."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def profile(request):
-    profile_obj = Profile.objects.get(user=request.user)
+    profile_obj, _ = Profile.objects.get_or_create(
+        user=request.user
+    )
 
     if request.method == "GET":
-        serializer = ProfileSerializer(profile_obj, context={"request": request})
-        return Response(serializer.data)
-    elif request.method == "PATCH":
         serializer = ProfileSerializer(
-            profile_obj, data=request.data, partial=True, context={"request": request}
+            profile_obj,
+            context={"request": request},
         )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data)
+
+    serializer = ProfileSerializer(
+        profile_obj,
+        data=request.data,
+        partial=True,
+        context={"request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    return Response(serializer.data)
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def update_fcm_token(request):
-    fcm_token = request.data.get("fcm_token")
+    token = request.data.get("fcm_token")
 
-    if not fcm_token:
+    if not isinstance(token, str) or not token.strip():
         return Response(
-            {"error": "fcm_token is required"}, status=status.HTTP_400_BAD_REQUEST
+            {"fcm_token": ["A non-empty token is required."]},
+            status=status.HTTP_400_BAD_REQUEST,
         )
-    AccountService.update_fcm_token(request.user, fcm_token)
-    return Response({"message": "FCM token updated successfully"})
+
+    profile_obj, _ = Profile.objects.get_or_create(
+        user=request.user
+    )
+    profile_obj.fcm_token = token.strip()
+    profile_obj.save(update_fields=["fcm_token", "updated_at"])
+
+    return Response({"detail": "FCM token updated."})
 
 
-@api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
-def addresses(request):
-    if request.method == "GET":
-        addresses = AccountService.get_user_addresses(request.user)
-        return Response(AddressSerializer(addresses, many=True).data)
-    elif request.method == "POST":
-        serializer = AddressSerializer(request.data)
-        if serializer.is_valid():
-            address = AccountService.create_address(
-                request.user, **serializer.validated_data
-            )
+class AddressListCreateView(generics.ListCreateAPIView):
+    serializer_class = AddressSerializer
+    permission_classes = [IsAuthenticated]
 
-            return Response(
-                AddressSerializer(address).data, status=status.HTTP_201_CREATED
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        return AccountService.get_user_addresses(
+            self.request.user
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
-@api_view(["GET", "PUT", "PATCH", "DELETE"])
-@permission_classes([IsAuthenticated])
-def address_details(request, address_id):
-    try:
-        if request.method == "GET":
-            address = AccountService.get_address(request.user, address_id)
-            return Response(AddressSerializer(address).data)
-        elif request.method in ["PUT", "PATCH"]:
-            serializer = AddressSerializer(
-                data=request.data, partial=(request.method == "PATCH")
-            )
+class AddressDetailView(
+    generics.RetrieveUpdateDestroyAPIView
+):
+    serializer_class = AddressSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = "id"
+    lookup_url_kwarg = "address_id"
 
-            if serializer.is_valid():
-                address = AccountService.update_address(
-                    request.user, address_id, **serializer.validated_data
-                )
-                return Response(AddressSerializer(address).data)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        elif request.method == "DELETE":
-            AccountService.delete_address(request.user, address_id)
-            return Response(status=status.HTTP_204_NO_CONTENT)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+    def get_queryset(self):
+        return Address.objects.filter(
+            user=self.request.user
+        )
 
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def set_default_address(request, address_id):
-    try:
-        address = AccountService.set_default_address(request.user, address_id)
-        return Response(AddressSerializer(address).data)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+    address = get_object_or_404(
+        Address,
+        id=address_id,
+        user=request.user,
+    )
+
+    address = AccountService.set_default_address(
+        request.user,
+        address.id,
+    )
+
+    return Response(AddressSerializer(address).data)
