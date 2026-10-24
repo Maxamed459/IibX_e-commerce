@@ -1,4 +1,6 @@
+from django.contrib.auth import password_validation
 from rest_framework import serializers
+
 from .models import User, Profile, Address
 
 
@@ -11,18 +13,37 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserRegistrationSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    password = serializers.CharField(write_only=True, min_length=8)
-    phone = serializers.CharField(required=False, allow_blank=True)
+    password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+    )
+    phone = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=20,
+    )
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("User with this email already exists")
+        value = value.strip().lower()
+
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError(
+                "A user with this email already exists."
+            )
+
+        return value
+
+    def validate_password(self, value):
+        password_validation.validate_password(value)
         return value
 
 
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+    )
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -33,20 +54,24 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = [
             "user",
             "avater",
+            "name",
             "gender",
             "preferred_size",
+            "size_system",
             "style_preferences",
             "height_cm",
             "weight_kg",
-            "size_system",
             "currency",
             "language",
             "country",
             "created_at",
             "updated_at",
-            "name",
         ]
-        read_only_fields = ["created_at", "updated_at"]
+        read_only_fields = [
+            "user",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -66,4 +91,8 @@ class AddressSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+        ]
