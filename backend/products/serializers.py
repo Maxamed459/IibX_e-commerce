@@ -1,25 +1,32 @@
 from rest_framework import serializers
+
 from .models import Categories, Products
-from django.utils.text import slugify
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Categories
-        fields = ['id', 'name', 'slug']
-        extra_kwargs = {'slug': {'required': False}}
+        fields = ["id", "name", "slug", "created_at"]
+        read_only_fields = ["id", "slug", "created_at"]
 
     def validate_name(self, value):
+        value = value.strip()
+
         if len(value) < 2:
-            raise serializers.ValidationError("Category name must be at least 2 characters long.")
+            raise serializers.ValidationError(
+                "Category name must contain at least 2 characters."
+            )
+
         return value
 
-class ProductSerializer(serializers.ModelSerializer):
+
+class ProductReadSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
 
     class Meta:
         model = Products
         fields = [
-            "id", 
+            "id",
             "name",
             "slug",
             "description",
@@ -27,13 +34,17 @@ class ProductSerializer(serializers.ModelSerializer):
             "price",
             "stock",
             "is_active",
-            "category"
+            "category",
+            "created_at",
+            "updated_at",
         ]
 
-class CreateProductSerializer(serializers.ModelSerializer):
+
+class ProductWriteSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(
-        queryset = Categories.objects.all()
+        queryset=Categories.objects.all()
     )
+
     class Meta:
         model = Products
         fields = [
@@ -44,21 +55,24 @@ class CreateProductSerializer(serializers.ModelSerializer):
             "price",
             "stock",
             "is_active",
-            "category"
+            "category",
         ]
+        extra_kwargs = {
+            "slug": {"required": False, "allow_blank": True},
+        }
 
     def validate_price(self, value):
         if value <= 0:
-            raise serializers.ValidationError("Price must be greater than zero.")
+            raise serializers.ValidationError(
+                "Price must be greater than zero."
+            )
+
         return value
-    
+
     def validate_stock(self, value):
         if value < 0:
-            raise serializers.ValidationError("Stock must be positive number or Zero.")
-        return value
-    
-    def create(self, validated_data):
-        if not validated_data.get("slug"):
-            validated_data["slug"] = slugify(validated_data["name"])
+            raise serializers.ValidationError(
+                "Stock cannot be negative."
+            )
 
-        return super().create(validated_data)
+        return value
