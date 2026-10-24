@@ -1,9 +1,9 @@
-django
+Django
 djangorestframework
 djangorestframework-simplejwt
-python-dotenv
+django-filter
 django-cors-headers
 drf-spectacular
-psycopg2-binary
-psycopg
+python-dotenv
+psycopg[binary]
 Pillow
