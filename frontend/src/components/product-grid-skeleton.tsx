@@ -1,0 +1,1 @@
+export function ProductGridSkeleton(){return <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">{[1,2,3,4].map(n=><div key={n}><div className="aspect-[4/5] animate-pulse rounded-2xl bg-neutral-100"/><div className="mt-3 h-4 w-2/3 animate-pulse rounded bg-neutral-100"/><div className="mt-2 h-4 w-1/3 animate-pulse rounded bg-neutral-100"/></div>)}</div>}
