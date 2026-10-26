@@ -155,7 +155,7 @@ def addresses(request):
         addresses = AccountService.get_user_addresses(request.user)
         return Response(AddressSerializer(addresses, many=True).data)
     elif request.method == "POST":
-        serializer = AddressSerializer(request.data)
+        serializer = AddressSerializer(data=request.data)
         if serializer.is_valid():
             address = AccountService.create_address(
                 request.user, **serializer.validated_data
