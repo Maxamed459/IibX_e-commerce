@@ -1,8 +1,8 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.shortcuts import get_object_or_404
 
-from rest_framework import generics, status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics, status, mixins
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -122,6 +122,28 @@ class MyOrderListView(generics.ListAPIView):
             Order.objects.filter(customer=self.request.user)
             .prefetch_related("items")
         )
+
+class ListCreateOrders(generics.ListCreateAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+            return (
+                Order.objects
+                .prefetch_related("items").all()
+            )
+class RetreiveUpdateDestroyOrders(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+            return (
+                Order.objects
+                .prefetch_related("items").all()
+            )
+
+
+
 
 
 class MyOrderDetailView(generics.RetrieveAPIView):
