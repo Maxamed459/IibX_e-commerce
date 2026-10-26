@@ -15,6 +15,8 @@ import {
 } from "@ant-design/icons";
 import type { RootState } from "@/lib/store";
 import { logout } from "@/lib/store";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 const { Sider, Content, Header } = Layout;
 export default function AdminLayout({
   children,
@@ -24,6 +26,7 @@ export default function AdminLayout({
   const path = usePathname();
   const router = useRouter();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const auth = useSelector((s: RootState) => s.auth);
   const redirected = useRef(false);
   const isStaff = !!(auth.user?.is_staff || auth.user?.is_superuser);
@@ -98,10 +101,10 @@ export default function AdminLayout({
     },
   ];
   return (
-    <Layout className="min-h-[80vh] bg-[#f5f6f8]">
+    <Layout className="min-h-screen bg-[#f5f6f8]">
       <Sider
         breakpoint="lg"
-        collapsedWidth="0"
+        collapsedWidth="64"
         theme="light"
         className="!border-r !border-neutral-200"
       >
@@ -118,20 +121,25 @@ export default function AdminLayout({
           </Link>
         </div>
       </Sider>
-      <Layout>
+      <Layout className="min-h-screen min-w-0">
         <Header className="flex items-center justify-between border-b border-neutral-200 !bg-white px-5">
-          <Typography.Text strong>Store management</Typography.Text>
+          <Typography.Text strong>
+            Welcome back {auth.user.is_staff ? "Admin" : ""}{" "}
+            {auth.user.email.split("@")[0]}
+          </Typography.Text>
           <Button
             icon={<LogoutOutlined />}
             onClick={() => {
               dispatch(logout());
+              queryClient.clear();
+              toast.success("Signed out successfully");
               router.push("/login");
             }}
           >
             Sign out
           </Button>
         </Header>
-        <Content className="min-w-0 p-4 sm:p-7">{children}</Content>
+        <Content className="min-w-0 flex-1 p-4 sm:p-7">{children}</Content>
       </Layout>
     </Layout>
   );
