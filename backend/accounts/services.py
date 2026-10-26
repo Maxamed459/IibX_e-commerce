@@ -47,6 +47,14 @@ class AccountService:
         return user
 
     @staticmethod
+    def create_address(user, **valiadted_data):
+        return Address.objects.create(
+            user=user,
+            **valiadted_data
+        )
+        
+
+    @staticmethod
     def get_user_addresses(user):
         return Address.objects.filter(user=user).order_by(
             "-is_default",
