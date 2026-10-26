@@ -1,3 +1,57 @@
 "use client";
-import Link from "next/link"; import { ShoppingBag } from "lucide-react"; import type { Product } from "@/lib/types"; import { money } from "@/lib/utils"; import { Button } from "@/components/ui/button"; import { useAddCartItemMutation } from "@/lib/api";
-export function ProductCard({product}:{product:Product}){const [add,{isLoading}]=useAddCartItemMutation();const category=typeof product.category==="object"?product.category.name:"New season";return <article className="group"><Link href={`/product/${product.id}`} className="block overflow-hidden rounded-2xl bg-neutral-100"><div className="aspect-[4/5] w-full overflow-hidden">{product.image?<img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105"/>:<div className="flex h-full items-center justify-center bg-gradient-to-br from-stone-200 via-neutral-100 to-stone-300 text-xs uppercase tracking-[.25em] text-neutral-500">Thread / Form</div>}</div></Link><div className="flex items-start justify-between gap-3 pt-3"><div className="min-w-0"><p className="text-xs text-neutral-500">{category}</p><Link href={`/product/${product.id}`} className="mt-1 block truncate font-medium hover:underline">{product.name}</Link><p className="mt-1 text-sm text-neutral-600">{money(product.price)}</p></div><Button size="icon" variant="outline" aria-label="Add to cart" disabled={isLoading||product.stock<1} onClick={()=>add({product:product.id,quantity:1})}><ShoppingBag size={16}/></Button></div></article>}
+import Link from "next/link";
+import { ShoppingBag } from "lucide-react";
+import type { Product } from "@/lib/types";
+import { money } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useAddCartItemMutation } from "@/lib/api";
+export function ProductCard({ product }: { product: Product }) {
+  const [add, { isLoading }] = useAddCartItemMutation();
+  const category =
+    typeof product.category === "object" ? product.category.name : "New season";
+  return (
+    <article className="group">
+      <Link
+        href={`/product/${product.id}`}
+        className="block overflow-hidden rounded-2xl bg-neutral-100"
+      >
+        <div className="aspect-[4/5] w-full overflow-hidden">
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center bg-gradient-to-br from-stone-200 via-neutral-100 to-stone-300 text-xs uppercase tracking-[.25em] text-neutral-500">
+              Thread / Form
+            </div>
+          )}
+        </div>
+      </Link>
+      <div className="flex items-start justify-between gap-3 pt-3">
+        <div className="min-w-0">
+          <p className="text-xs text-neutral-500">{category}</p>
+          <Link
+            href={`/product/${product.id}`}
+            className="mt-1 block truncate font-medium hover:underline"
+          >
+            {product.name}
+          </Link>
+          <p className="mt-1 text-sm text-neutral-600">
+            {money(product.price)}
+          </p>
+        </div>
+        <Button
+          size="icon"
+          variant="outline"
+          aria-label="Add to cart"
+          disabled={isLoading || product.stock < 1}
+          onClick={() => add({ product_id: product.id, quantity: 1 })}
+        >
+          <ShoppingBag size={16} />
+        </Button>
+      </div>
+    </article>
+  );
+}
