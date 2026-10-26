@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { useProductQuery, useAddCartItemMutation } from "@/lib/api";
@@ -13,6 +13,7 @@ export default function ProductDetailPage() {
   const [qty, setQty] = useState(1);
   const [add, { isLoading: adding }] = useAddCartItemMutation();
   const [message, setMessage] = useState("");
+  const router = useRouter();
   async function addToCart() {
     if (!p || p.stock < 1) {
       setMessage("This product is out of stock.");
@@ -26,6 +27,7 @@ export default function ProductDetailPage() {
     try {
       await add({ product_id: p.id, quantity: qty }).unwrap();
     } catch {
+      router.push("/login");
       setMessage("Could not add this item. Please sign in and try again.");
     }
   }
