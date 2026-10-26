@@ -114,11 +114,11 @@ export const api = createApi({
         Array.isArray(r) ? r : r.results,
       providesTags: ["Category"],
     }),
-    createProduct: b.mutation<Product, Partial<Product>>({
+    createProduct: b.mutation<Product, FormData>({
       query: (body) => ({ url: "/products/", method: "POST", body }),
       invalidatesTags: ["Product"],
     }),
-    updateProduct: b.mutation<Product, { id: string; body: Partial<Product> }>({
+    updateProduct: b.mutation<Product, { id: string; body: FormData }>({
       query: ({ id, body }) => ({
         url: `/products/${id}/`,
         method: "PATCH",
@@ -209,21 +209,30 @@ export const api = createApi({
       query: (id) => ({ url: `/orders/cart/items/${id}/`, method: "DELETE" }),
       invalidatesTags: ["Cart"],
     }),
-    checkout: b.mutation<
-      Order,
-      { shipping_address: string; payment_method: string }
-    >({
-      query: (body) => ({ url: "/orders/checkout/", method: "POST", body }),
-      invalidatesTags: ["Cart", "Order"],
-    }),
+    checkout: b.mutation<Order, { address_id: string; payment_method: string }>(
+      {
+        query: (body) => ({ url: "/orders/checkout/", method: "POST", body }),
+        invalidatesTags: ["Cart", "Order"],
+      },
+    ),
     orders: b.query<Order[], void>({
-      query: () => "/orders/my-orders/",
+      query: () => "/orders/",
+      transformResponse: (r: Order[] | { results: Order[] }) =>
+        Array.isArray(r) ? r : r.results,
+      providesTags: ["Order"],
+    }),
+    updateOrder: b.mutation<Order, { id: string; status?: string; payment_status?: string }>({
+      query: ({ id, ...body }) => ({ url: `/orders/${id}/`, method: "PATCH", body }),
+      invalidatesTags: ["Order"],
+    }),
+    myOrders: b.query<Order[], void>({
+      query: () => "/orders/mine/",
       transformResponse: (r: Order[] | { results: Order[] }) =>
         Array.isArray(r) ? r : r.results,
       providesTags: ["Order"],
     }),
     order: b.query<Order, string>({
-      query: (id) => `/orders/my-orders/${id}/`,
+      query: (id) => `/orders/mine/${id}/`,
       providesTags: ["Order"],
     }),
   }),
@@ -252,5 +261,7 @@ export const {
   useDeleteCartItemMutation,
   useCheckoutMutation,
   useOrdersQuery,
+  useMyOrdersQuery,
+  useUpdateOrderMutation,
   useOrderQuery,
 } = api;
