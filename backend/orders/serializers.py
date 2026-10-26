@@ -100,7 +100,21 @@ class OrderSerializer(serializers.ModelSerializer):
             "placed_at",
             "updated_at",
         ]
-        read_only_fields = fields
+        read_only_fields = [
+            "id",
+            "payment_method",
+            "shipping_full_name",
+            "shipping_phone",
+            "shipping_address",
+            "shipping_city",
+            "shipping_country",
+            "subtotal",
+            "shipping_cost",
+            "total",
+            "items",
+            "placed_at",
+            "updated_at",
+        ]
 
 
 class CheckoutSerializer(serializers.Serializer):
